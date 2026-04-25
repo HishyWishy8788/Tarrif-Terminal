@@ -1,0 +1,15 @@
+{
+  "id": "profile_001",
+  "name": "Khan family",
+  "household": {
+    "dependents": 2,
+    "commuter": true,
+    "weeklyGroceryCad": 250
+  },
+  "stockStack": [
+    { "ticker": "NVDA", "shares": 10 },
+    { "ticker": "TSLA", "shares": 8 },
+    { "ticker": "RY", "shares": 25 },
+    { "ticker": "AAPL", "shares": 15 }
+  ]
+}

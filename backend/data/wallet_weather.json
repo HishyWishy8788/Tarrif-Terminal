@@ -1,0 +1,56 @@
+[
+  {
+    "id": "news_006",
+    "channel": "WALLET_WEATHER",
+    "severity": "BREAKING",
+    "ts": "2026-04-25T13:45:00Z",
+    "source": "StatsCan",
+    "headline": "Gas up 12¢/L this week",
+    "summary": "Refinery outage in Sarnia tightens Ontario supply.",
+    "metric": "GAS",
+    "changePct": 8
+  },
+  {
+    "id": "news_007",
+    "channel": "WALLET_WEATHER",
+    "severity": "WATCH",
+    "ts": "2026-04-25T10:00:00Z",
+    "source": "StatsCan",
+    "headline": "Grocery basket up 4% month-over-month",
+    "summary": "Produce and dairy lead the increase as import costs climb.",
+    "metric": "GROCERY",
+    "changePct": 4
+  },
+  {
+    "id": "news_008",
+    "channel": "WALLET_WEATHER",
+    "severity": "WATCH",
+    "ts": "2026-04-24T15:00:00Z",
+    "source": "Bank of Canada",
+    "headline": "BoC holds overnight rate, signals possible 25 bps hike",
+    "summary": "Statement flags persistent core inflation; markets price next move higher.",
+    "metric": "RATES",
+    "changePct": 25
+  },
+  {
+    "id": "news_009",
+    "channel": "WALLET_WEATHER",
+    "severity": "BREAKING",
+    "ts": "2026-04-24T12:30:00Z",
+    "source": "Reuters",
+    "headline": "US announces 15% tariff on Canadian steel and aluminum",
+    "summary": "Cross-border manufacturing costs expected to rise; retaliation under review in Ottawa.",
+    "metric": "WORLD_EVENT"
+  },
+  {
+    "id": "news_010",
+    "channel": "WALLET_WEATHER",
+    "severity": "INFO",
+    "ts": "2026-04-23T08:00:00Z",
+    "source": "GasBuddy",
+    "headline": "Gas down 3¢/L in Quebec on softer crude",
+    "summary": "Brent slipped 2% overnight; pump prices easing in eastern provinces.",
+    "metric": "GAS",
+    "changePct": -2
+  }
+]
