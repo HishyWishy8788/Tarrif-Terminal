@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Tariff is a one-screen household financial risk dashboard that maps global news and market signals to budget impact estimates with a guarded AI approval layer."
+    />
+    <title>Tariff | One-Screen Risk Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#app">Skip to dashboard</a>
+
+    <div class="dashboard-frame">
+      <aside class="rail" aria-label="Tariff navigation and demo controls">
+        <a class="brand" href="#app" aria-label="Tariff dashboard">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 36 36"><path d="M6 26V10h7v16H6Zm9 0V6h7v20h-7Zm9 0V15h7v11h-7Z" /></svg>
+          </span>
+          <span>Tariff</span>
+        </a>
+
+        <div class="rail-status">
+          <span>Household mode</span>
+          <strong>Khan demo</strong>
+          <small>Rent, commute, groceries, fuel</small>
+        </div>
+
+        <div class="seed-stack" aria-label="Demo scenarios">
+          <button class="seed-card active" type="button" data-seed="food" aria-pressed="true">
+            <span>Groceries</span>
+            <strong>Tariff pressure</strong>
+          </button>
+          <button class="seed-card" type="button" data-seed="fuel" aria-pressed="false">
+            <span>Fuel</span>
+            <strong>Oil shock</strong>
+          </button>
+          <button class="seed-card" type="button" data-seed="repairs" aria-pressed="false">
+            <span>Repairs</span>
+            <strong>Parts cost</strong>
+          </button>
+          <button class="seed-card" type="button" data-seed="labor" aria-pressed="false">
+            <span>Income</span>
+            <strong>Sector watch</strong>
+          </button>
+        </div>
+
+        <section class="rail-card" aria-label="Dashboard reliability">
+          <span>System status</span>
+          <strong id="system-score">96%</strong>
+          <div class="meter"><span style="width: 96%"></span></div>
+          <small>Demo data. API contracts ready.</small>
+        </section>
+      </aside>
+
+      <main id="app" class="dashboard">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Household financial early warning</p>
+            <h1>Risk dashboard</h1>
+          </div>
+          <div class="topbar-actions">
+            <button class="button button-secondary" type="button" id="refresh-feeds" aria-label="Update dashboard data">Update</button>
+            <button class="button button-primary" type="button" data-action="approve" aria-label="Approve the suggested next step">Approve next step</button>
+          </div>
+        </header>
+
+        <section class="board-grid" aria-label="One-screen dashboard blocks">
+          <article id="active-intent" class="card alert-card" aria-live="polite">
+            <div class="card-head">
+              <div>
+                <span class="badge" id="active-origin">NewsAPI + GDELT</span>
+                <span class="badge badge-warning" id="active-category">Food groceries</span>
+              </div>
+              <div class="severity" id="severity-chip"><span></span><strong>Watch</strong></div>
+            </div>
+
+            <div class="alert-body">
+              <div>
+                <h2 id="active-title">Food import costs rise after tariff announcement</h2>
+                <p id="active-chain">
+                  Imported staples may lift next month’s grocery run.
+                </p>
+              </div>
+              <svg class="stock-arrow" viewBox="0 0 120 74" aria-hidden="true">
+                <path d="M8 60 35 38l19 11 39-37" />
+                <path d="M76 12h17v17" />
+              </svg>
+            </div>
+
+            <div class="impact-console">
+              <span>Estimated budget change</span>
+              <strong id="active-impact">+$38 - +$74 / month</strong>
+            </div>
+
+            <div class="mini-grid">
+              <div class="mini-panel">
+                <span>Suggested next step</span>
+                <strong id="active-action">Move $55 into buffer</strong>
+              </div>
+              <div class="mini-panel">
+                <span>Calculation</span>
+                <strong id="assumption-preview">Grocery basket model</strong>
+              </div>
+            </div>
+
+            <div class="action-row">
+              <button class="button button-primary" type="button" data-action="approve" aria-label="Approve this recommendation">Approve</button>
+              <button class="button button-secondary" type="button" data-action="snooze" aria-label="Remind me later">Later</button>
+              <button class="button button-quiet" type="button" data-action="reject" aria-label="Dismiss this recommendation">Dismiss</button>
+            </div>
+          </article>
+
+          <article id="route-guard" class="card guard-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Root Guard AI</p>
+                <h2>Approval guard</h2>
+              </div>
+              <span class="api-status guard">Human gate</span>
+            </div>
+            <div class="guard-visual" aria-hidden="true">
+              <span></span>
+              <strong>No silent action</strong>
+            </div>
+            <ol class="transaction-list" id="transaction-list"></ol>
+          </article>
+
+          <section class="kpi-grid" aria-label="Top metrics">
+            <article class="kpi-card">
+              <span>Signals</span>
+              <strong id="active-signal-count">18</strong>
+              <small>Reviewed now</small>
+            </article>
+            <article class="kpi-card">
+              <span>Budget change</span>
+              <strong id="kpi-impact">+$38 - +$74</strong>
+              <small>CAD estimate</small>
+            </article>
+            <article class="kpi-card">
+              <span>Decision</span>
+              <strong id="kpi-state">Needs review</strong>
+              <small>Human gate</small>
+            </article>
+            <article class="kpi-card">
+              <span>Readiness</span>
+              <strong id="latency-ms">184ms</strong>
+              <small>Adapter check</small>
+            </article>
+          </section>
+
+          <article id="news-widget" class="card feed-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Global</p>
+                <h2>World news</h2>
+              </div>
+              <span class="api-status live">NewsAPI</span>
+            </div>
+            <div class="feed-list" id="global-news-list"></div>
+          </article>
+
+          <article id="market-widget" class="card feed-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Markets</p>
+                <h2>Market news</h2>
+              </div>
+              <span class="api-status live">Finnhub</span>
+            </div>
+            <div class="feed-list" id="market-news-list"></div>
+          </article>
+
+          <article class="card profile-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Profile</p>
+                <h2>Khan household</h2>
+              </div>
+              <span class="api-status">Demo</span>
+            </div>
+            <div class="profile-grid">
+              <div><span>Rent</span><strong>$2,450</strong></div>
+              <div><span>Commute</span><strong>185 km/wk</strong></div>
+              <div><span>Dependents</span><strong>2</strong></div>
+              <div><span>Watch</span><strong>Food, fuel</strong></div>
+            </div>
+          </article>
+
+          <article class="card engine-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Foundation</p>
+                <h2>Impact engine</h2>
+              </div>
+              <span class="api-status live">Rules</span>
+            </div>
+            <div class="engine-stack" id="engine-stack"></div>
+          </article>
+
+          <article class="card sources-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Foundation</p>
+                <h2>Data sources</h2>
+              </div>
+              <span class="api-status">Map</span>
+            </div>
+            <div class="source-grid" id="source-grid"></div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
