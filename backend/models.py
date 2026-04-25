@@ -1,69 +1,82 @@
 from typing import Literal, Optional
 from pydantic import BaseModel, Field
 
-Channel = Literal["PRO_MIRROR", "WALLET_WEATHER"]
-Severity = Literal["INFO", "WATCH", "BREAKING"]
+EventCategory = Literal[
+    "FOOD_GROCERIES",
+    "FUEL_COMMUTE",
+    "TRADE_GOODS_REPAIRS",
+    "LABOR_INCOME",
+    "RENT_UTILITIES",
+    "UNCLASSIFIED",
+]
+
+SignalOrigin = Literal["GLOBAL", "MARKET", "DEMO"]
 IntentState = Literal["PENDING", "APPROVED", "REJECTED", "SNOOZED"]
-ProAction = Literal["BUY", "SELL", "HOLD", "DISCLOSE"]
-WalletMetric = Literal["GROCERY", "GAS", "RATES", "WORLD_EVENT"]
+HousingType = Literal["RENT", "OWN_OUTRIGHT", "OTHER_FIXED_COST"]
+SeedKey = Literal["food", "fuel", "repairs", "labor"]
 
 
-class NewsItem(BaseModel):
+class WorldSignal(BaseModel):
     id: str
-    channel: Channel
-    severity: Severity
     ts: str
     source: str
-    headline: str
-    summary: str
-    tickers: Optional[list[str]] = None
-    proName: Optional[str] = None
-    proAction: Optional[ProAction] = None
-    metric: Optional[WalletMetric] = None
-    changePct: Optional[float] = None
-
-
-class ImpactEstimate(BaseModel):
-    monthlyLow: float
-    monthlyHigh: float
-
-
-class RecommendedAction(BaseModel):
-    text: str
+    title: str
+    link: Optional[str] = None
+    snippet: Optional[str] = None
+    origin: SignalOrigin
+    category: EventCategory
+    confidence: float = Field(ge=0, le=1)
     rationale: str
-    estImpactCad: Optional[ImpactEstimate] = None
 
 
-class Intent(BaseModel):
+class MicroImpact(BaseModel):
+    monthlyCadLow: Optional[float] = None
+    monthlyCadHigh: Optional[float] = None
+    oneTimeCadLow: Optional[float] = None
+    oneTimeCadHigh: Optional[float] = None
+    horizon: str
+    assumptions: list[str]
+    formulaId: str
+    formulaVersion: str
+
+
+class IntentNarrative(BaseModel):
+    causalChain: str
+    recommendedAction: str
+
+
+class AuditEntry(BaseModel):
+    ts: str
+    event: str
+    note: Optional[str] = None
+
+
+class AIIntent(BaseModel):
     id: str
-    news: NewsItem
-    action: RecommendedAction
+    signal: WorldSignal
+    impact: MicroImpact
+    narrative: IntentNarrative
     state: IntentState
     createdAt: str
     updatedAt: str
+    auditLog: list[AuditEntry] = []
 
 
-class StockHolding(BaseModel):
-    ticker: str
-    shares: float
-
-
-class Household(BaseModel):
-    dependents: int
-    commuter: bool
-    weeklyGroceryCad: float
-
-
-class Profile(BaseModel):
+class UserProfile(BaseModel):
     id: str
-    name: str
-    household: Household
-    stockStack: list[StockHolding]
+    incomeBand: str
+    housingType: HousingType
+    monthlyHousingCad: float = Field(ge=0)
+    commuteKmPerWeek: float = Field(ge=0)
+    dependents: int = Field(ge=0)
+    sector: str
+    gigMode: bool
+    stressTags: list[str]
 
 
 class SeedRequest(BaseModel):
     seedKey: str
-    newsId: Optional[str] = None
+    intentSeed: Optional[SeedKey] = None
 
 
 class SnoozeRequest(BaseModel):

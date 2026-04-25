@@ -1,0 +1,22 @@
+{
+  "food": {
+    "signalId": "sig_food_global_001",
+    "causalChain": "Imported staples may lift next month’s grocery run.",
+    "recommendedAction": "Move $55 into buffer"
+  },
+  "fuel": {
+    "signalId": "sig_fuel_market_004",
+    "causalChain": "Fuel moves fast for a commute-heavy household.",
+    "recommendedAction": "Move $35 into buffer"
+  },
+  "repairs": {
+    "signalId": "sig_repairs_global_002",
+    "causalChain": "Imported parts may make repairs more expensive.",
+    "recommendedAction": "Pre-price repair options"
+  },
+  "labor": {
+    "signalId": "sig_labor_global_003",
+    "causalChain": "The household work sector overlaps with this layoff cluster.",
+    "recommendedAction": "Review next two bills"
+  }
+}

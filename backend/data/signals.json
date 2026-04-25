@@ -1,0 +1,68 @@
+[
+  {
+    "id": "sig_food_global_001",
+    "ts": "2026-04-25T12:38:00Z",
+    "source": "NewsAPI",
+    "title": "Food import costs rise after tariff announcement",
+    "snippet": "Imported staples may become more expensive over the next month as suppliers reprice.",
+    "origin": "GLOBAL",
+    "category": "FOOD_GROCERIES",
+    "confidence": 0.78,
+    "rationale": "Tariff coverage on imported staples; pass-through likely within one billing cycle."
+  },
+  {
+    "id": "sig_repairs_global_002",
+    "ts": "2026-04-25T12:27:00Z",
+    "source": "GDELT",
+    "title": "Appliance repair parts face new import pressure",
+    "snippet": "Repair quotes may rise for mid-range appliances and replacement parts.",
+    "origin": "GLOBAL",
+    "category": "TRADE_GOODS_REPAIRS",
+    "confidence": 0.66,
+    "rationale": "Cross-border parts coverage in tariff list; one-time costs flagged."
+  },
+  {
+    "id": "sig_labor_global_003",
+    "ts": "2026-04-25T12:05:00Z",
+    "source": "Global labor feed",
+    "title": "Logistics employers slow hiring in Ontario corridor",
+    "snippet": "The household work profile overlaps with the reported sector softness.",
+    "origin": "GLOBAL",
+    "category": "LABOR_INCOME",
+    "confidence": 0.55,
+    "rationale": "Sector-specific hiring slowdown matches household primary sector."
+  },
+  {
+    "id": "sig_fuel_market_004",
+    "ts": "2026-04-25T12:42:00Z",
+    "source": "Finnhub",
+    "title": "WTI crude jumps after supply disruption",
+    "snippet": "Commute-heavy households face a higher pump-price exposure window.",
+    "origin": "MARKET",
+    "category": "FUEL_COMMUTE",
+    "confidence": 0.81,
+    "rationale": "Crude move tends to translate to retail fuel within 5-10 days."
+  },
+  {
+    "id": "sig_food_market_005",
+    "ts": "2026-04-25T12:32:00Z",
+    "source": "Alpha Vantage",
+    "title": "Wheat and dairy futures climb on logistics constraints",
+    "snippet": "Staple baskets can move faster than headline CPI when transport stress persists.",
+    "origin": "MARKET",
+    "category": "FOOD_GROCERIES",
+    "confidence": 0.68,
+    "rationale": "Futures up on staples used in household basket model."
+  },
+  {
+    "id": "sig_utilities_market_006",
+    "ts": "2026-04-25T12:14:00Z",
+    "source": "Marketaux",
+    "title": "Natural gas volatility lifts utility watch index",
+    "snippet": "Utility-sensitive households should watch the next billing cycle.",
+    "origin": "MARKET",
+    "category": "RENT_UTILITIES",
+    "confidence": 0.62,
+    "rationale": "Spot natural gas drives utility bill exposure for renters with included heating."
+  }
+]

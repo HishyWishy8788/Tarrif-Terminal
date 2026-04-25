@@ -5,100 +5,102 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
+    AIIntent,
     HealthResponse,
-    Intent,
-    NewsItem,
-    Profile,
     SeedRequest,
     SnoozeRequest,
+    UserProfile,
+    WorldSignal,
 )
 from store import store
 
 SEED_KEY = os.environ.get("TARIFF_SEED_KEY", "demo-seed")
 
-app = FastAPI(title="Tariff Backend", version="0.1")
+ALLOWED_ORIGINS = {"GLOBAL", "MARKET", "DEMO"}
+ALLOWED_STATES = {"PENDING", "APPROVED", "REJECTED", "SNOOZED"}
+ALLOWED_SEED_KEYS = {"food", "fuel", "repairs", "labor"}
+
+app = FastAPI(title="Tariff Backend", version="0.2")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "OPTIONS"],
+    allow_headers=["Content-Type"],
 )
 
 
 @app.get("/api/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(ok=True, version="0.1")
+    return HealthResponse(ok=True, version="0.2")
 
 
-@app.get("/api/profile", response_model=Profile)
-def get_profile() -> Profile:
+@app.get("/api/profile", response_model=UserProfile)
+def get_profile() -> UserProfile:
     return store.profile
 
 
-@app.put("/api/profile", response_model=Profile)
-def put_profile(profile: Profile) -> Profile:
-    store.profile = profile
-    return store.profile
+@app.put("/api/profile", response_model=UserProfile)
+def put_profile(profile: UserProfile) -> UserProfile:
+    return store.replace_profile(profile)
 
 
-@app.get("/api/feed", response_model=list[NewsItem])
-def get_feed(channel: Optional[str] = Query(default=None)) -> list[NewsItem]:
-    if channel and channel not in ("PRO_MIRROR", "WALLET_WEATHER"):
-        raise HTTPException(status_code=400, detail="invalid channel")
-    return store.list_feed(channel)
+@app.get("/api/feed", response_model=list[WorldSignal])
+def get_feed(origin: Optional[str] = Query(default=None)) -> list[WorldSignal]:
+    if origin is not None and origin not in ALLOWED_ORIGINS:
+        raise HTTPException(status_code=400, detail="invalid origin")
+    return store.list_signals(origin)
 
 
-@app.get("/api/breaking", response_model=Optional[NewsItem])
-def get_breaking() -> Optional[NewsItem]:
-    return store.breaking()
-
-
-@app.get("/api/intents/active", response_model=Optional[Intent])
-def get_active_intent() -> Optional[Intent]:
+@app.get("/api/intents/active", response_model=Optional[AIIntent])
+def get_active_intent() -> Optional[AIIntent]:
     return store.active_intent()
 
 
-@app.get("/api/intents", response_model=list[Intent])
-def get_intents(state: Optional[str] = Query(default=None)) -> list[Intent]:
-    if state and state not in ("PENDING", "APPROVED", "REJECTED", "SNOOZED"):
+@app.get("/api/intents", response_model=list[AIIntent])
+def get_intents(state: Optional[str] = Query(default=None)) -> list[AIIntent]:
+    if state is not None and state not in ALLOWED_STATES:
         raise HTTPException(status_code=400, detail="invalid state")
     return store.list_intents(state)
 
 
-@app.post("/api/intents/{intent_id}/approve", response_model=Intent)
-def approve_intent(intent_id: str) -> Intent:
-    intent = store.transition(intent_id, "APPROVED")
+@app.post("/api/intents/{intent_id}/approve", response_model=AIIntent)
+def approve_intent(intent_id: str) -> AIIntent:
+    intent = store.transition(intent_id, "APPROVED", note="user approved")
     if intent is None:
         raise HTTPException(status_code=404, detail="intent not found")
     return intent
 
 
-@app.post("/api/intents/{intent_id}/reject", response_model=Intent)
-def reject_intent(intent_id: str) -> Intent:
-    intent = store.transition(intent_id, "REJECTED")
+@app.post("/api/intents/{intent_id}/reject", response_model=AIIntent)
+def reject_intent(intent_id: str) -> AIIntent:
+    intent = store.transition(intent_id, "REJECTED", note="user rejected")
     if intent is None:
         raise HTTPException(status_code=404, detail="intent not found")
     return intent
 
 
-@app.post("/api/intents/{intent_id}/snooze", response_model=Intent)
-def snooze_intent(intent_id: str, body: Optional[SnoozeRequest] = None) -> Intent:
-    intent = store.transition(intent_id, "SNOOZED")
+@app.post("/api/intents/{intent_id}/snooze", response_model=AIIntent)
+def snooze_intent(
+    intent_id: str, body: Optional[SnoozeRequest] = None
+) -> AIIntent:
+    minutes = body.minutes if body else 60
+    intent = store.transition(
+        intent_id, "SNOOZED", note=f"snoozed {minutes}m"
+    )
     if intent is None:
         raise HTTPException(status_code=404, detail="intent not found")
     return intent
 
 
-@app.post("/api/admin/seed", response_model=Intent)
-def admin_seed(body: SeedRequest) -> Intent:
+@app.post("/api/admin/seed", response_model=AIIntent)
+def admin_seed(body: SeedRequest) -> AIIntent:
     if body.seedKey != SEED_KEY:
         raise HTTPException(status_code=403, detail="invalid seedKey")
-    news_id = body.newsId or "news_001"
-    news = store.news_by_id.get(news_id)
-    if news is None:
-        raise HTTPException(status_code=404, detail="news item not found")
-    return store.create_intent(news)
+    seed_key = body.intentSeed or "food"
+    if seed_key not in ALLOWED_SEED_KEYS:
+        raise HTTPException(status_code=400, detail="invalid intentSeed")
+    return store.create_intent_from_seed(seed_key)
 
 
 @app.post("/api/admin/reset")
