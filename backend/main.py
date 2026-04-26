@@ -21,15 +21,25 @@ from store import store
 
 SEED_KEY = os.environ.get("TARIFF_SEED_KEY", "demo-seed")
 
+# CORS allowlist — comma-separated origins. Default = local Vite dev only.
+# Wildcards are intentionally NOT supported: a `*` policy combined with the
+# `Authorization` header lets any site read JWT-bearing responses.
+CORS_ORIGINS = [
+    o.strip()
+    for o in os.environ.get("CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173").split(",")
+    if o.strip() and o.strip() != "*"
+]
+
 ALLOWED_ORIGINS = {"GLOBAL", "MARKET", "DEMO"}
 ALLOWED_STATES = {"PENDING", "APPROVED", "REJECTED", "SNOOZED"}
 ALLOWED_SEED_KEYS = {"food", "fuel", "repairs", "labor"}
 
-app = FastAPI(title="Tariff Backend", version="0.3")
+app = FastAPI(title="Tariff Backend", version="0.4")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=CORS_ORIGINS,
+    allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
 )
@@ -39,7 +49,7 @@ app.middleware("http")(clerk_auth_middleware)
 
 @app.get("/api/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(ok=True, version="0.3")
+    return HealthResponse(ok=True, version="0.4")
 
 
 @app.get("/api/auth/status")
@@ -124,10 +134,15 @@ def severity() -> SeverityResponse:
 
 
 @app.post("/api/chat", response_model=ChatResponse)
-def chat(body: ChatRequest, request: Request) -> ChatResponse:
+async def chat(body: ChatRequest, request: Request) -> ChatResponse:
     user_id = getattr(request.state, "user_id", None) or "anonymous"
-    return handle_chat(
+    ip = request.client.host if request.client else "unknown"
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        ip = fwd.split(",")[0].strip()
+    return await handle_chat(
         user_id=user_id,
+        ip=ip,
         body_message=body.message,
         history=body.history,
         active_intent=store.active_intent(),

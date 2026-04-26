@@ -55,6 +55,12 @@ class Store:
         signal = self.signals_by_id.get(seed["signalId"])
         if signal is None:
             raise KeyError(f"seed references unknown signal: {seed['signalId']}")
+        # Auto-snooze any prior PENDING intent so /api/severity reflects only
+        # the freshly seeded scenario (otherwise old PENDINGs stack up and
+        # severity stays RED forever).
+        for prior in list(self.intents.values()):
+            if prior.state == "PENDING":
+                self.transition(prior.id, "SNOOZED", note="auto-snoozed by new seed")
         return self._create_intent(
             signal=signal,
             causal_chain=seed["causalChain"],
