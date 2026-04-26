@@ -11,3 +11,4 @@ dist/
 dist-types/
 *.tsbuildinfo
 backend/logs/
+backend/data/cache/

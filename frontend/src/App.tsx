@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "./api/client";
+import { OnboardingDrawer } from "./components/OnboardingDrawer";
 import { RightRail } from "./components/RightRail";
 import { ScenarioBanner } from "./components/ScenarioBanner";
 import { Sidebar } from "./components/Sidebar";
@@ -49,6 +50,7 @@ export function App() {
       </main>
 
       <RightRail view={view} />
+      <OnboardingDrawer />
     </div>
   );
 }

@@ -71,6 +71,34 @@ export interface ChatResponse {
   reply: string;
 }
 
+export interface WaveSample {
+  ts: number;
+  value: number;
+}
+
+export interface LiveImpact {
+  monthlyCadHigh: number | null;
+  oneTimeCadHigh: number | null;
+  category: EventCategory | null;
+  multiplier: number;
+}
+
+export interface LiveSnapshot {
+  pressureByCategory: Record<string, number>;
+  tickerPrices: Record<string, number>;
+  waveSamples: WaveSample[];
+  activeImpact: LiveImpact;
+  headlineCount: number;
+  updatedAt: string;
+}
+
+export interface RefreshNewsResponse {
+  ok: boolean;
+  elapsedMs: number;
+  count: number;
+  errors: string[];
+}
+
 export interface UserProfile {
   id: string;
   incomeBand: string;

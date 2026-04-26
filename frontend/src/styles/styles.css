@@ -39,6 +39,161 @@
   /* fonts */
   --font-sans: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* === Quiet Trading Floor — motion tokens === */
+  --glow-mint: rgba(75, 224, 160, 0.45);
+  --glow-rose: rgba(244, 63, 94, 0.45);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --lerp-ms: 280ms;
+  --halo-ms: 800ms;
+  --breath-ms: 4000ms;
+}
+
+/* === motion utilities === */
+
+.live-digit {
+  display: inline-block;
+  position: relative;
+  transition: color var(--lerp-ms) var(--ease-out-expo);
+  font-variant-numeric: tabular-nums;
+}
+
+.live-digit[data-halo="mint"]::after,
+.live-digit[data-halo="rose"]::after {
+  content: "";
+  position: absolute;
+  inset: -6px -10px;
+  border-radius: 6px;
+  pointer-events: none;
+  animation: halo-fade var(--halo-ms) var(--ease-out-expo) forwards;
+}
+
+.live-digit[data-halo="mint"]::after {
+  background: radial-gradient(closest-side, var(--glow-mint), transparent 70%);
+  box-shadow: 0 0 18px 2px var(--glow-mint);
+}
+.live-digit[data-halo="rose"]::after {
+  background: radial-gradient(closest-side, var(--glow-rose), transparent 70%);
+  box-shadow: 0 0 18px 2px var(--glow-rose);
+}
+
+@keyframes halo-fade {
+  0%   { opacity: 1; }
+  60%  { opacity: 0.55; }
+  100% { opacity: 0; }
+}
+
+/* breath = subtle continuous pulse on the wave gradient (Approach 1 anchor) */
+.wave-breath stop:first-child {
+  animation: breath var(--breath-ms) ease-in-out infinite;
+}
+
+@keyframes breath {
+  0%, 100% { stop-opacity: 0.35; }
+  50%      { stop-opacity: 0.55; }
+}
+
+/* === Onboarding overlay === */
+
+.onboarding-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(7, 10, 16, 0.85);
+  backdrop-filter: blur(8px);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  animation: ob-fade var(--lerp-ms) var(--ease-out-expo);
+}
+
+@keyframes ob-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.onboarding-card {
+  width: min(560px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-card);
+  padding: 26px 28px;
+  animation: ob-rise 360ms var(--ease-out-expo);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+@keyframes ob-rise {
+  from { transform: translateY(12px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.onboarding-head h2 {
+  margin: 6px 0 4px;
+  font-family: var(--font-sans);
+  font-weight: 200;
+  font-size: 26px;
+  letter-spacing: -0.6px;
+  line-height: 1.2;
+}
+
+.onboarding-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--text-mute);
+}
+
+.onboarding-section { display: flex; flex-direction: column; gap: 8px; }
+.onboarding-section label {
+  font-size: 10.5px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  font-weight: 600;
+}
+
+.onboarding-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.onboarding-chip {
+  padding: 9px 14px;
+  background: var(--bg-inset);
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  color: var(--text-mute);
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background var(--lerp-ms) var(--ease-out-expo),
+              border-color var(--lerp-ms) var(--ease-out-expo),
+              color var(--lerp-ms) var(--ease-out-expo);
+}
+.onboarding-chip:hover { background: var(--bg-card-hover); color: var(--text); }
+.onboarding-chip.active {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(52, 211, 153, 0.45);
+  color: var(--emerald-bright);
+}
+
+.onboarding-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* live status pip used in the section header pill */
+.live-pulse-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--emerald-bright);
+  box-shadow: 0 0 8px var(--emerald-bright);
+  animation: pulse 1.6s ease-in-out infinite;
+  margin-right: 6px;
+  vertical-align: middle;
 }
 
 * { box-sizing: border-box; }
