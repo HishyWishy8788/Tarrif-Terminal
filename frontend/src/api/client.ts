@@ -9,7 +9,12 @@ import type {
   WorldSignal,
 } from "../types/api";
 
-const ADMIN_SEED_KEY = "demo-seed";
+// NOTE: any seed key shipped to the browser is effectively public — anyone
+// using devtools can read it. The real authorisation gate for /api/admin/* is
+// the Clerk admin-claim check in the backend middleware (see backend/auth.py).
+// This env var only exists so the dev key isn't hardcoded in source.
+const ADMIN_SEED_KEY =
+  (import.meta.env.VITE_ADMIN_SEED_KEY as string | undefined) ?? "demo-seed";
 
 let getToken: (() => Promise<string | null>) | null = null;
 
