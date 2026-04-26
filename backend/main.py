@@ -1,13 +1,18 @@
 import os
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+from auth import AUTH_ENABLED, clerk_auth_middleware
+from chat import handle_chat
 from models import (
     AIIntent,
+    ChatRequest,
+    ChatResponse,
     HealthResponse,
     SeedRequest,
+    SeverityResponse,
     SnoozeRequest,
     UserProfile,
     WorldSignal,
@@ -20,19 +25,26 @@ ALLOWED_ORIGINS = {"GLOBAL", "MARKET", "DEMO"}
 ALLOWED_STATES = {"PENDING", "APPROVED", "REJECTED", "SNOOZED"}
 ALLOWED_SEED_KEYS = {"food", "fuel", "repairs", "labor"}
 
-app = FastAPI(title="Tariff Backend", version="0.2")
+app = FastAPI(title="Tariff Backend", version="0.3")
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["GET", "POST", "PUT", "OPTIONS"],
-    allow_headers=["Content-Type"],
+    allow_headers=["Content-Type", "Authorization"],
 )
+
+app.middleware("http")(clerk_auth_middleware)
 
 
 @app.get("/api/health", response_model=HealthResponse)
 def health() -> HealthResponse:
-    return HealthResponse(ok=True, version="0.2")
+    return HealthResponse(ok=True, version="0.3")
+
+
+@app.get("/api/auth/status")
+def auth_status() -> dict:
+    return {"authEnabled": AUTH_ENABLED}
 
 
 @app.get("/api/profile", response_model=UserProfile)
@@ -91,6 +103,35 @@ def snooze_intent(
     if intent is None:
         raise HTTPException(status_code=404, detail="intent not found")
     return intent
+
+
+@app.get("/api/severity", response_model=SeverityResponse)
+def severity() -> SeverityResponse:
+    intent = store.active_intent()
+    if intent is None:
+        return SeverityResponse(level="GREEN")
+    if intent.signal.confidence >= 0.75:
+        level = "RED"
+    elif intent.signal.confidence >= 0.55:
+        level = "YELLOW"
+    else:
+        level = "GREEN"
+    return SeverityResponse(
+        level=level,
+        intentId=intent.id,
+        confidence=intent.signal.confidence,
+    )
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+def chat(body: ChatRequest, request: Request) -> ChatResponse:
+    user_id = getattr(request.state, "user_id", None) or "anonymous"
+    return handle_chat(
+        user_id=user_id,
+        body_message=body.message,
+        history=body.history,
+        active_intent=store.active_intent(),
+    )
 
 
 @app.post("/api/admin/seed", response_model=AIIntent)
