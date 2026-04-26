@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 import time
@@ -7,7 +8,7 @@ from pathlib import Path
 from typing import Optional
 
 import httpx
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 
 from models import AIIntent, ChatMessage, ChatResponse
 
@@ -38,19 +39,44 @@ DASHBOARD CONTEXT:
 {context_block}
 """
 
+# Module-level shared state. The lock prevents the previous threadpool race
+# where rapid concurrent requests could all read the bucket length before any
+# of them appended.
 _buckets: dict[str, list[float]] = defaultdict(list)
+_buckets_lock = asyncio.Lock()
 
 
-def _enforce_rate_limit(user_id: str) -> None:
+def _client_ip(request: Request) -> str:
+    # Trust x-forwarded-for when behind a known proxy; otherwise fall back to
+    # the direct peer. For local demos the peer is enough.
+    fwd = request.headers.get("x-forwarded-for")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    if request.client:
+        return request.client.host
+    return "unknown"
+
+
+def _bucket_key(user_id: str, ip: str) -> str:
+    # Anonymous callers share a single user_id; partition them by IP so one
+    # spammer can't lock everyone out of the demo.
+    if user_id == "anonymous" or not user_id:
+        return f"ip:{ip}"
+    return f"u:{user_id}"
+
+
+async def _enforce_rate_limit(user_id: str, ip: str) -> None:
+    key = _bucket_key(user_id, ip)
     now = time.time()
-    bucket = _buckets[user_id]
-    bucket[:] = [t for t in bucket if now - t < CHAT_RATE_WINDOW_S]
-    if len(bucket) >= CHAT_RATE_LIMIT:
-        raise HTTPException(
-            status_code=429,
-            detail=f"rate limit exceeded; max {CHAT_RATE_LIMIT}/min",
-        )
-    bucket.append(now)
+    async with _buckets_lock:
+        bucket = _buckets[key]
+        bucket[:] = [t for t in bucket if now - t < CHAT_RATE_WINDOW_S]
+        if len(bucket) >= CHAT_RATE_LIMIT:
+            raise HTTPException(
+                status_code=429,
+                detail=f"rate limit exceeded; max {CHAT_RATE_LIMIT}/min",
+            )
+        bucket.append(now)
 
 
 def _build_context_block(active_intent: Optional[AIIntent]) -> str:
@@ -59,11 +85,12 @@ def _build_context_block(active_intent: Optional[AIIntent]) -> str:
     return json.dumps(active_intent.model_dump(), indent=2)
 
 
-def _log_turn(user_id: str, message: str, reply: str) -> None:
+def _log_turn(user_id: str, ip: str, message: str, reply: str) -> None:
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     entry = {
         "ts": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "user_id": user_id,
+        "ip": ip,
         "message": message,
         "reply": reply,
     }
@@ -71,13 +98,14 @@ def _log_turn(user_id: str, message: str, reply: str) -> None:
         f.write(json.dumps(entry) + "\n")
 
 
-def handle_chat(
+async def handle_chat(
     user_id: str,
+    ip: str,
     body_message: str,
     history: list[ChatMessage],
     active_intent: Optional[AIIntent],
 ) -> ChatResponse:
-    _enforce_rate_limit(user_id)
+    await _enforce_rate_limit(user_id, ip)
 
     system = SYSTEM_PROMPT_TEMPLATE.format(
         context_block=_build_context_block(active_intent),
@@ -89,17 +117,17 @@ def handle_chat(
     messages.append({"role": "user", "content": body_message})
 
     try:
-        response = httpx.post(
-            f"{OLLAMA_URL}/api/chat",
-            json={"model": OLLAMA_MODEL, "messages": messages, "stream": False},
-            timeout=OLLAMA_TIMEOUT,
-        )
+        async with httpx.AsyncClient(timeout=OLLAMA_TIMEOUT) as client:
+            response = await client.post(
+                f"{OLLAMA_URL}/api/chat",
+                json={"model": OLLAMA_MODEL, "messages": messages, "stream": False},
+            )
         response.raise_for_status()
         reply = response.json()["message"]["content"]
     except httpx.ConnectError:
         raise HTTPException(
             status_code=503,
-            detail="Ollama not reachable. Run `ollama serve` and `ollama pull " + OLLAMA_MODEL + "`.",
+            detail=f"Ollama not reachable. Run `ollama serve` and `ollama pull {OLLAMA_MODEL}`.",
         )
     except httpx.HTTPStatusError as e:
         raise HTTPException(
@@ -112,5 +140,5 @@ def handle_chat(
             detail=f"Ollama response error: {type(e).__name__}",
         )
 
-    _log_turn(user_id, body_message, reply)
+    _log_turn(user_id, ip, body_message, reply)
     return ChatResponse(reply=reply)
