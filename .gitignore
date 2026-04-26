@@ -6,3 +6,8 @@ venv/
 .env
 .env.local
 .DS_Store
+node_modules/
+dist/
+dist-types/
+*.tsbuildinfo
+backend/logs/
