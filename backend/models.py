@@ -109,3 +109,24 @@ class SeverityResponse(BaseModel):
     level: SeverityLevel
     intentId: Optional[str] = None
     confidence: Optional[float] = None
+
+
+class WaveSample(BaseModel):
+    ts: float
+    value: float
+
+
+class LiveImpact(BaseModel):
+    monthlyCadHigh: Optional[int] = None
+    oneTimeCadHigh: Optional[int] = None
+    category: Optional[EventCategory] = None
+    multiplier: float = 1.0  # the news-pressure scalar applied
+
+
+class LiveSnapshot(BaseModel):
+    pressureByCategory: dict[str, float]
+    tickerPrices: dict[str, float]
+    waveSamples: list[WaveSample]
+    activeImpact: LiveImpact
+    headlineCount: int
+    updatedAt: str

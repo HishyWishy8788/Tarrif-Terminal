@@ -3,6 +3,8 @@ import type {
   ChatMessage,
   ChatResponse,
   IntentState,
+  LiveSnapshot,
+  RefreshNewsResponse,
   SeedKey,
   SignalOrigin,
   UserProfile,
@@ -65,4 +67,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ message, history }),
     }),
+  live: (qs?: string) =>
+    request<LiveSnapshot>(`/demo/live${qs ? `?${qs}` : ""}`),
+  refreshNews: () =>
+    request<RefreshNewsResponse>("/admin/refresh-news", { method: "POST" }),
 };

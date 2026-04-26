@@ -24,7 +24,8 @@ class Store:
     def __init__(self) -> None:
         self.profile: UserProfile
         self.signals_by_id: dict[str, WorldSignal] = {}
-        self.signals: list[WorldSignal] = []
+        self.signals: list[WorldSignal] = []  # seed/fixture signals
+        self.live_signals: list[WorldSignal] = []  # adapter-fed signals
         self.seeds: dict[str, dict] = {}
         self.intents: dict[str, AIIntent] = {}
         self._intent_counter = 0
@@ -100,9 +101,28 @@ class Store:
         return intent
 
     def list_signals(self, origin: Optional[str] = None) -> list[WorldSignal]:
+        # Live adapter signals take precedence; fall back to fixtures so the
+        # demo always shows *something* even if the APIs are cold.
+        merged: list[WorldSignal] = []
+        seen: set[str] = set()
+        for s in self.live_signals:
+            if s.id in seen:
+                continue
+            seen.add(s.id)
+            merged.append(s)
+        for s in self.signals:
+            if s.id in seen:
+                continue
+            seen.add(s.id)
+            merged.append(s)
+        merged.sort(key=lambda s: s.ts, reverse=True)
         if origin is None:
-            return self.signals
-        return [s for s in self.signals if s.origin == origin]
+            return merged
+        return [s for s in merged if s.origin == origin]
+
+    def replace_live_signals(self, new_signals: list[WorldSignal]) -> None:
+        """Called by adapter cron after a successful fetch."""
+        self.live_signals = list(new_signals)
 
     def list_intents(self, state: Optional[str] = None) -> list[AIIntent]:
         items = sorted(self.intents.values(), key=lambda i: i.createdAt, reverse=True)

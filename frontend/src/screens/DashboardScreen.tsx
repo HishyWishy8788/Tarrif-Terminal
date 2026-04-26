@@ -1,15 +1,18 @@
+import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api } from "../api/client";
+import { LiveDigit } from "../components/LiveDigit";
 import { ProgressBar } from "../components/ProgressBar";
 import { SectionHeader } from "../components/SectionHeader";
 import { CATEGORY_LABELS, CATEGORY_TONES, relativeTime } from "../components/labels";
+import { useLiveData } from "../hooks/useLiveData";
 import {
   EXPOSURE_VECTORS,
   GUARDRAIL_CONFIDENCE,
   SCENARIOS,
   type ScenarioKey,
 } from "../data/mocks";
-import type { AIIntent, WorldSignal } from "../types/api";
+import type { AIIntent, WaveSample, WorldSignal } from "../types/api";
 
 interface Props {
   scenario: ScenarioKey;
@@ -21,13 +24,40 @@ const HouseholdIcon = (
   </svg>
 );
 
-function impactValue(intent: AIIntent | null, scenario: ScenarioKey): string {
-  if (scenario === "boc-cut") return "−$48";
-  if (scenario === "cad-weakens") return "+$31";
-  if (scenario === "heating-oil") return "+$210";
-  if (intent?.impact.monthlyCadHigh != null) return `+$${intent.impact.monthlyCadHigh}`;
-  if (intent?.impact.oneTimeCadHigh != null) return `+$${intent.impact.oneTimeCadHigh}`;
-  return "+$0";
+function impactNumeric(
+  intent: AIIntent | null,
+  scenario: ScenarioKey,
+  liveHigh: number | null,
+): number {
+  if (scenario === "boc-cut") return -48;
+  if (scenario === "cad-weakens") return 31;
+  if (scenario === "heating-oil") return 210;
+  if (liveHigh != null) return liveHigh;
+  if (intent?.impact.monthlyCadHigh != null) return intent.impact.monthlyCadHigh;
+  if (intent?.impact.oneTimeCadHigh != null) return intent.impact.oneTimeCadHigh;
+  return 0;
+}
+
+function buildWavePath(samples: WaveSample[], width = 400, height = 200): string {
+  if (samples.length === 0) {
+    return "M0,140 C60,90 110,180 180,120 C240,70 300,150 400,100";
+  }
+  const xs = samples.map((_, i) => (i / Math.max(1, samples.length - 1)) * width);
+  const values = samples.map((s) => s.value);
+  const max = Math.max(1, ...values);
+  // Map value high→low to y low→high (inverted, with 30% headroom on top)
+  const ys = values.map((v) => height - (v / max) * (height * 0.7) - 16);
+  // Smoothed Catmull-Rom-ish path via simple bezier control points
+  const segments: string[] = [];
+  for (let i = 1; i < xs.length; i++) {
+    const prev = i === 0 ? 0 : i - 1;
+    const cx1 = (xs[prev] + xs[i]) / 2;
+    const cy1 = ys[prev];
+    const cx2 = cx1;
+    const cy2 = ys[i];
+    segments.push(`C${cx1.toFixed(1)},${cy1.toFixed(1)} ${cx2.toFixed(1)},${cy2.toFixed(1)} ${xs[i].toFixed(1)},${ys[i].toFixed(1)}`);
+  }
+  return `M${xs[0].toFixed(1)},${ys[0].toFixed(1)} ${segments.join(" ")}`;
 }
 
 function impactLabel(scenario: ScenarioKey): string {
@@ -90,11 +120,14 @@ export function DashboardScreen({ scenario }: Props) {
   const globalQ = useQuery({
     queryKey: ["feed", "GLOBAL"],
     queryFn: () => api.feed("GLOBAL"),
+    refetchInterval: 30_000,
   });
   const marketQ = useQuery({
     queryKey: ["feed", "MARKET"],
     queryFn: () => api.feed("MARKET"),
+    refetchInterval: 30_000,
   });
+  const liveQ = useLiveData();
 
   const transitionM = useMutation({
     mutationFn: ({
@@ -118,6 +151,16 @@ export function DashboardScreen({ scenario }: Props) {
 
   const scenarioMeta = SCENARIOS.find((s) => s.key === scenario);
   const intent = activeQ.data ?? null;
+  const live = liveQ.data ?? null;
+
+  const liveHigh = live?.activeImpact.monthlyCadHigh
+    ?? live?.activeImpact.oneTimeCadHigh
+    ?? null;
+  const wavePath = useMemo(
+    () => buildWavePath(live?.waveSamples ?? []),
+    [live?.waveSamples],
+  );
+  const impactNum = impactNumeric(intent, scenario, liveHigh);
 
   // Top 3 feed cards from real signals (mix global + market by recency).
   const feed = [...(globalQ.data ?? []), ...(marketQ.data ?? [])]
@@ -129,8 +172,13 @@ export function DashboardScreen({ scenario }: Props) {
       <SectionHeader
         icon={HouseholdIcon}
         title="Household Impact"
-        subtitle="Macro signals translated into household budget impacts"
+        subtitle={
+          live
+            ? `${live.headlineCount} live headlines · pressure ×${live.activeImpact.multiplier.toFixed(2)}`
+            : "Macro signals translated into household budget impacts"
+        }
         pill={intent ? "Pending review" : "All clear"}
+        pillLive
       />
 
       <div className="grid12">
@@ -149,7 +197,8 @@ export function DashboardScreen({ scenario }: Props) {
           </div>
 
           <div className="impact-value">
-            {impactValue(intent, scenario)}
+            <span aria-hidden>{impactNum < 0 ? "−" : "+"}$</span>
+            <LiveDigit value={Math.abs(impactNum)} ariaLabel="Household impact in CAD" />
             <span className="impact-value-suffix">/mo</span>
           </div>
 
@@ -169,24 +218,15 @@ export function DashboardScreen({ scenario }: Props) {
           </div>
 
           <div className="exposure-wave" aria-hidden="true">
-            <svg viewBox="0 0 400 200" preserveAspectRatio="none">
+            <svg viewBox="0 0 400 200" preserveAspectRatio="none" className="wave-breath">
               <defs>
                 <linearGradient id="wave" x1="0" x2="0" y1="0" y2="1">
                   <stop offset="0%" stopColor="#10b981" stopOpacity="0.35" />
                   <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
                 </linearGradient>
               </defs>
-              <path
-                d="M0,140 C60,90 110,180 180,120 C240,70 300,150 400,100 L400,200 L0,200 Z"
-                fill="url(#wave)"
-              />
-              <path
-                d="M0,140 C60,90 110,180 180,120 C240,70 300,150 400,100"
-                stroke="#34d399"
-                strokeWidth="2"
-                opacity="0.85"
-                fill="none"
-              />
+              <path d={`${wavePath} L400,200 L0,200 Z`} fill="url(#wave)" />
+              <path d={wavePath} stroke="#34d399" strokeWidth="2" opacity="0.85" fill="none" />
             </svg>
           </div>
 
